@@ -34,7 +34,55 @@ npm i
 
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
-```
+```     
+# Here are step-by-step instructions to build the project locally and push the changes to the `gh-pages` branch using VS Code:
+
+### Step 1: Open Your Project in VS Code
+
+1. Open VS Code.
+2. Open your project folder (`safe-code-academy`) in VS Code.
+
+### Step 2: Build Your Project Locally
+
+1. Open a terminal in VS Code (`Ctrl + ` `).
+2. Run the build command:
+   ```sh
+   npm install
+   npm run build
+   ```
+   Ensure the build output is in a directory like `dist` or `build`.
+
+### Step 3: Create and Switch to gh-pages Branch
+
+1. In the terminal, run the following commands to create and switch to the `gh-pages` branch:
+   ```sh
+   git checkout -b gh-pages
+   ```
+
+### Step 4: Add and Commit Build Files
+
+1. Add the build output directory:
+   ```sh
+   git add dist  # Replace 'dist' with your build output directory
+   ```
+2. Commit the changes:
+   ```sh
+   git commit -m "Deploy to GitHub Pages"
+   ```
+
+### Step 5: Push to gh-pages Branch
+
+1. Push the changes to the `gh-pages` branch:
+   ```sh
+   git push origin gh-pages
+   ```
+
+### Step 6: Configure GitHub Pages
+
+1. Go to [GitHub Pages settings](https://github.com/xander-haj/safe-code-academy/settings/pages) in your repository.
+2. Set the source to the `gh-pages` branch and save.
+
+By following these steps, your project will be built locally and deployed to GitHub Pages.
 
 **Edit a file directly in GitHub**
 
