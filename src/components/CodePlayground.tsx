@@ -25,7 +25,18 @@ const CodePlayground = ({ code, onChange, language }: CodePlaygroundProps) => {
     if (!iframeRef.current) return;
 
     const iframe = iframeRef.current;
-    const sanitizedCode = DOMPurify.sanitize(code);
+    
+    // Create a configuration object for DOMPurify
+    const purifyConfig = {
+      ALLOWED_TAGS: ['html', 'head', 'body', 'style', 'h1', 'h2', 'h3', 'p', 'div', 'span', 'a', 'ul', 'li', 'button'],
+      ALLOWED_ATTR: ['class', 'id', 'style', 'href'],
+      ADD_TAGS: ['script'], // Allow script tags but with restrictions
+      FORBID_TAGS: ['iframe', 'object', 'embed'], // Prevent nested iframes and objects
+      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'], // Prevent event handlers
+    };
+
+    // Sanitize the code
+    const sanitizedCode = DOMPurify.sanitize(code, purifyConfig);
 
     // Create a safe environment for HTML/CSS/JS execution
     const safeHtml = `
@@ -33,6 +44,10 @@ const CodePlayground = ({ code, onChange, language }: CodePlaygroundProps) => {
       <html>
         <head>
           <meta charset="utf-8">
+          <meta http-equiv="Content-Security-Policy" 
+                content="default-src 'self' 'unsafe-inline'; 
+                         img-src 'self' data: https:; 
+                         style-src 'self' 'unsafe-inline';">
           <style>
             /* Reset default styles */
             * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -42,20 +57,46 @@ const CodePlayground = ({ code, onChange, language }: CodePlaygroundProps) => {
         <body>
           ${sanitizedCode}
           <script>
-            // Prevent access to sensitive APIs
-            delete window.localStorage;
-            delete window.sessionStorage;
-            delete window.indexedDB;
-            delete window.openDatabase;
-            window.fetch = null;
-            window.XMLHttpRequest = null;
+            // Sandbox the environment
+            (function() {
+              // Prevent access to sensitive APIs
+              delete window.localStorage;
+              delete window.sessionStorage;
+              delete window.indexedDB;
+              delete window.openDatabase;
+              window.fetch = null;
+              window.XMLHttpRequest = null;
+              
+              // Prevent access to parent window
+              window.parent = null;
+              window.top = null;
+              
+              // Prevent eval and similar functions
+              window.eval = null;
+              window.Function = null;
+              
+              // Log execution
+              console.log = function() {
+                window.parent.postMessage({
+                  type: 'log',
+                  data: Array.from(arguments)
+                }, '*');
+              };
+            })();
           </script>
         </body>
       </html>
     `;
 
-    // Update iframe content
+    // Update iframe content with sanitized and secured HTML
     iframe.srcdoc = safeHtml;
+
+    // Listen for console logs from the iframe
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'log') {
+        console.log('Sandbox output:', ...event.data.data);
+      }
+    });
   };
 
   return (
@@ -78,6 +119,7 @@ const CodePlayground = ({ code, onChange, language }: CodePlaygroundProps) => {
             lineNumbers: "on",
             scrollBeyondLastLine: false,
             automaticLayout: true,
+            readOnly: false,
           }}
         />
       </div>
