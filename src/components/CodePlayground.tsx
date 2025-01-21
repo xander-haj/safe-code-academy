@@ -14,6 +14,13 @@ const CodePlayground = ({ code, onChange, language }: CodePlaygroundProps) => {
   const [output, setOutput] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Reset iframe when code changes (e.g., when switching lessons)
+  useEffect(() => {
+    if (iframeRef.current) {
+      iframeRef.current.srcdoc = '';
+    }
+  }, [code]);
+
   const runCode = () => {
     if (!iframeRef.current) return;
 
