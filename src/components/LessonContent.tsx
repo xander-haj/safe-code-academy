@@ -6,7 +6,8 @@ interface LessonContentProps {
 }
 
 const LessonContent = ({ content }: LessonContentProps) => {
-  const sanitizedHtml = DOMPurify.sanitize(marked(content));
+  // Use marked.parse() instead of marked() for synchronous parsing
+  const sanitizedHtml = DOMPurify.sanitize(marked.parse(content));
 
   return (
     <div 
