@@ -6,13 +6,8 @@ interface LessonContentProps {
 }
 
 const LessonContent = ({ content }: LessonContentProps) => {
-  // Configure marked to use synchronous parsing
-  marked.setOptions({
-    async: false
-  });
-  
-  // Parse markdown to HTML synchronously
-  const rawHtml = marked.parse(content);
+  // Configure marked to use synchronous parsing and ensure it returns a string
+  const rawHtml = marked.parse(content, { async: false }) as string;
   
   // Sanitize the HTML
   const sanitizedHtml = DOMPurify.sanitize(rawHtml);
