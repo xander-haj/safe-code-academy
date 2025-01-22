@@ -8,16 +8,30 @@ interface CodePlaygroundProps {
   code: string;
   onChange: (value: string) => void;
   language: string;
+  content?: string;
 }
 
-const CodePlayground = ({ code, onChange, language }: CodePlaygroundProps) => {
+const CodePlayground = ({ code, onChange, language, content = "" }: CodePlaygroundProps) => {
   const [output, setOutput] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Reset iframe when code changes (e.g., when switching lessons)
+  useEffect(() => {
+    // Extract code from content's code blocks if available
+    if (content) {
+      const codeBlockRegex = /```(?:html|css|javascript)\n([\s\S]*?)```/;
+      const match = content.match(codeBlockRegex);
+      if (match && match[1]) {
+        console.log("Found code block in lesson content:", match[1]);
+        onChange(match[1].trim());
+      }
+    }
+  }, [content, onChange]);
+
+  // Reset iframe when code changes
   useEffect(() => {
     if (iframeRef.current) {
       iframeRef.current.srcdoc = '';
+      console.log("Reset iframe with new code:", code);
     }
   }, [code]);
 
@@ -90,6 +104,7 @@ const CodePlayground = ({ code, onChange, language }: CodePlaygroundProps) => {
 
     // Update iframe content with sanitized and secured HTML
     iframe.srcdoc = safeHtml;
+    console.log("Updated iframe with sanitized code");
 
     // Listen for console logs from the iframe
     window.addEventListener('message', (event) => {

@@ -12,7 +12,19 @@ HTML (HyperText Markup Language) is the standard markup language for creating we
 
 Create a simple HTML page with a heading that says "My First Webpage".
 
-Note: Remember to use proper HTML structure with \`<html>\`, \`<head>\`, and \`<body>\` tags.
+\`\`\`html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My First Webpage</title>
+</head>
+<body>
+    <h1>My First Webpage</h1>
+</body>
+</html>
+\`\`\`
+
+Try modifying the heading text to something else!
   `,
   language: "html",
   initialCode: `<!DOCTYPE html>

@@ -100,6 +100,7 @@ const Index = () => {
               code={code}
               onChange={setCode}
               language={allLessons[currentLesson].language}
+              content={allLessons[currentLesson].content}
             />
           </Card>
         </div>
