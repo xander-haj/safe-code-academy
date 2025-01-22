@@ -11,25 +11,23 @@ import {
 import CodePlayground from "@/components/CodePlayground";
 import LessonContent from "@/components/LessonContent";
 import { lessonCategories, getAllLessons } from "@/lib/lessons";
-import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
 const Index = () => {
   const [currentLesson, setCurrentLesson] = useState(0);
   const allLessons = getAllLessons();
   const [code, setCode] = useState(allLessons[0].initialCode || "");
+  const [selectedCategory, setSelectedCategory] = useState(lessonCategories[0].title);
 
-  const nextLesson = () => {
-    if (currentLesson < allLessons.length - 1) {
-      setCurrentLesson(prev => prev + 1);
-      setCode(allLessons[currentLesson + 1].initialCode || "");
-    }
-  };
-
-  const prevLesson = () => {
-    if (currentLesson > 0) {
-      setCurrentLesson(prev => prev - 1);
-      setCode(allLessons[currentLesson - 1].initialCode || "");
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    const firstLessonInCategory = lessonCategories
+      .find(cat => cat.title === category)
+      ?.lessons[0];
+    if (firstLessonInCategory) {
+      const lessonIndex = allLessons.findIndex(lesson => lesson.id === firstLessonInCategory.id);
+      setCurrentLesson(lessonIndex);
+      setCode(firstLessonInCategory.initialCode || "");
     }
   };
 
@@ -41,10 +39,18 @@ const Index = () => {
     }
   };
 
+  const currentCategory = lessonCategories.find(
+    category => category.title === selectedCategory
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4">
-        <Tabs defaultValue={lessonCategories[0].title} className="mb-6">
+        <Tabs 
+          value={selectedCategory} 
+          onValueChange={handleCategoryChange}
+          className="mb-6"
+        >
           <TabsList>
             {lessonCategories.map((category) => (
               <TabsTrigger key={category.title} value={category.title}>
@@ -64,7 +70,7 @@ const Index = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[200px]">
-                    {category.lessons.map((lesson) => (
+                    {currentCategory?.lessons.map((lesson) => (
                       <DropdownMenuItem
                         key={lesson.id}
                         onClick={() => selectLesson(lesson.id)}
@@ -85,21 +91,6 @@ const Index = () => {
               <h1 className="text-2xl font-semibold">
                 {allLessons[currentLesson].title}
               </h1>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={prevLesson}
-                  disabled={currentLesson === 0}
-                >
-                  Previous
-                </Button>
-                <Button
-                  onClick={nextLesson}
-                  disabled={currentLesson === allLessons.length - 1}
-                >
-                  Next
-                </Button>
-              </div>
             </div>
             <LessonContent content={allLessons[currentLesson].content} />
           </Card>
