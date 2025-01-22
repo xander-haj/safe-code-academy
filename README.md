@@ -4,24 +4,62 @@
 
 **URL**: https://lovable.dev/projects/85e505b4-6f2b-4dff-9e20-7ebe5c48aacb
 
-## How can I edit this code?
+## Adding New Lessons
 
-There are several ways of editing your application.
+To add new lessons to the application:
 
-**Use Lovable**
+1. Navigate to `src/lib/lessons/[category]` directory
+2. Create a new file for your lesson (e.g., `my-new-lesson.ts`)
+3. Follow this template:
+```typescript
+import { Lesson } from "../../types";
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/85e505b4-6f2b-4dff-9e20-7ebe5c48aacb) and start prompting.
+export const myNewLesson: Lesson = {
+  id: [unique_number],
+  title: "Your Lesson Title",
+  content: `
+    # Your Lesson Content
+    Write your lesson content using Markdown
+  `,
+  language: "html", // or css, javascript, etc.
+  initialCode: `<!-- Initial code for the playground -->`
+};
+```
+4. Import and add your lesson to the appropriate category in `src/lib/lessons/index.ts`
 
-Changes made via Lovable will be committed automatically to this repo.
+## Adding New Categories
 
-**Use your preferred IDE**
+To add a new category tab:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
+1. Update `src/lib/lessons/index.ts`:
+```typescript
+export const lessonCategories: LessonCategory[] = [
+  {
+    title: "Your New Category",
+    lessons: [
+      // Import and add your lessons here
+    ],
+  },
+  {
+    title: "HTML",
+    lessons: [
+      htmlIntroduction,
+      htmlElements,
+      htmlAttributes,
+      htmlForms,
+    ],
+  },
+  {
+    title: "CSS",
+    lessons: [
+      cssIntroduction,
+      cssSelectors,
+      cssBoxModel,
+      cssLayout,
+    ],
+  },
+];
+```
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
 git clone <YOUR_GIT_URL>
