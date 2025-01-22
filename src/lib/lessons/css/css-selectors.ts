@@ -14,6 +14,41 @@ Use different types of selectors:
 - Element selector
 - Class selector
 - ID selector
+
+\`\`\`html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSS Selectors</title>
+    <style>
+        /* Element selector */
+        h1 {
+            color: purple;
+        }
+        
+        /* Class selector */
+        .highlight {
+            background-color: yellow;
+            padding: 10px;
+        }
+        
+        /* ID selector */
+        #special {
+            border: 2px solid green;
+            margin: 20px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Main Title</h1>
+    <p class="highlight">This paragraph has a yellow background.</p>
+    <div id="special">This div has a green border.</div>
+</body>
+</html>
+\`\`\`
+
+Try adding more selectors or modifying the existing styles!
   `,
   language: "html",
   initialCode: `<!DOCTYPE html>
@@ -30,5 +65,5 @@ Use different types of selectors:
     <p class="highlight">Highlighted text</p>
     <div id="special">Special content</div>
 </body>
-</html>`,
+</html>`
 };
