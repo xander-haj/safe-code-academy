@@ -18,10 +18,8 @@ const LessonContent = ({ content, questions = [], isQuiz = false }: LessonConten
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
   const { toast } = useToast();
 
-  // Configure marked to use synchronous parsing
   const rawHtml = marked.parse(content, { async: false }) as string;
   
-  // Configure DOMPurify with security settings
   const purifyConfig = {
     ALLOWED_TAGS: [
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
@@ -37,6 +35,7 @@ const LessonContent = ({ content, questions = [], isQuiz = false }: LessonConten
   const sanitizedHtml = DOMPurify.sanitize(rawHtml, purifyConfig);
 
   const handleAnswerChange = (questionId: number, answer: string | string[]) => {
+    console.log('Answer changed:', { questionId, answer });
     setAnswers(prev => {
       const existing = prev.find(a => a.questionId === questionId);
       if (existing) {
@@ -47,51 +46,70 @@ const LessonContent = ({ content, questions = [], isQuiz = false }: LessonConten
   };
 
   const checkAnswers = () => {
+    console.log('Checking answers:', answers);
     let correct = 0;
+    let feedback = [];
+
     questions.forEach(question => {
       const userAnswer = answers.find(a => a.questionId === question.id);
-      if (userAnswer) {
-        if (Array.isArray(question.correctAnswer)) {
-          if (Array.isArray(userAnswer.answer) && 
-              question.correctAnswer.every((ans, idx) => ans === userAnswer.answer[idx])) {
-            correct++;
-          }
-        } else if (userAnswer.answer === question.correctAnswer) {
-          correct++;
-        }
+      if (!userAnswer) {
+        feedback.push(`Question ${question.id}: No answer provided`);
+        return;
+      }
+
+      let isCorrect = false;
+      if (Array.isArray(question.correctAnswer)) {
+        isCorrect = Array.isArray(userAnswer.answer) &&
+          question.correctAnswer.every((ans, idx) => 
+            String(ans).toLowerCase() === String(userAnswer.answer[idx]).toLowerCase()
+          );
+      } else {
+        isCorrect = String(userAnswer.answer).toLowerCase() === String(question.correctAnswer).toLowerCase();
+      }
+
+      if (isCorrect) {
+        correct++;
+        feedback.push(`Question ${question.id}: Correct!`);
+      } else {
+        feedback.push(`Question ${question.id}: Incorrect`);
       }
     });
 
+    console.log('Quiz results:', { correct, total: questions.length, feedback });
+
     toast({
-      title: `Quiz Results`,
-      description: `You got ${correct} out of ${questions.length} questions correct!`,
+      title: `Quiz Results: ${correct}/${questions.length}`,
+      description: feedback.join('\n'),
       duration: 5000,
     });
   };
 
   const renderQuestion = (question: QuizQuestion) => {
+    const currentAnswer = answers.find(a => a.questionId === question.id)?.answer;
+
     switch (question.type) {
       case 'fillInBlank':
         return (
-          <div key={question.id} className="mb-6">
-            <Label>{question.question}</Label>
+          <div key={question.id} className="mb-6 space-y-2">
+            <Label className="text-lg font-medium">{question.question}</Label>
             <Input
               type="text"
-              className="mt-2"
+              className="max-w-md"
               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              value={answers.find(a => a.questionId === question.id)?.answer as string || ''}
+              value={currentAnswer as string || ''}
+              placeholder="Type your answer here"
             />
           </div>
         );
 
       case 'multipleChoice':
         return (
-          <div key={question.id} className="mb-6">
-            <Label>{question.question}</Label>
+          <div key={question.id} className="mb-6 space-y-2">
+            <Label className="text-lg font-medium">{question.question}</Label>
             <RadioGroup
-              className="mt-2"
               onValueChange={(value) => handleAnswerChange(question.id, value)}
-              value={answers.find(a => a.questionId === question.id)?.answer as string}
+              value={currentAnswer as string}
+              className="space-y-2"
             >
               {question.options?.map((option, index) => (
                 <div key={index} className="flex items-center space-x-2">
@@ -105,12 +123,12 @@ const LessonContent = ({ content, questions = [], isQuiz = false }: LessonConten
 
       case 'trueFalse':
         return (
-          <div key={question.id} className="mb-6">
-            <Label>{question.question}</Label>
+          <div key={question.id} className="mb-6 space-y-2">
+            <Label className="text-lg font-medium">{question.question}</Label>
             <RadioGroup
-              className="mt-2"
               onValueChange={(value) => handleAnswerChange(question.id, value)}
-              value={answers.find(a => a.questionId === question.id)?.answer as string}
+              value={currentAnswer as string}
+              className="space-y-2"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="true" id={`q${question.id}-true`} />
@@ -126,19 +144,20 @@ const LessonContent = ({ content, questions = [], isQuiz = false }: LessonConten
 
       case 'matching':
         return (
-          <div key={question.id} className="mb-6">
-            <Label>{question.question}</Label>
+          <div key={question.id} className="mb-6 space-y-2">
+            <Label className="text-lg font-medium">{question.question}</Label>
             {question.matchingPairs?.map((pair, index) => (
-              <div key={index} className="grid grid-cols-2 gap-4 mt-2">
-                <div>{pair.left}</div>
+              <div key={index} className="grid grid-cols-2 gap-4 items-center max-w-md">
+                <div className="font-medium">{pair.left}</div>
                 <Input
                   type="text"
                   onChange={(e) => {
-                    const newAnswers = [...(answers.find(a => a.questionId === question.id)?.answer as string[] || [])];
+                    const newAnswers = [...(currentAnswer as string[] || [])];
                     newAnswers[index] = e.target.value;
                     handleAnswerChange(question.id, newAnswers);
                   }}
-                  value={(answers.find(a => a.questionId === question.id)?.answer as string[] || [])[index] || ''}
+                  value={(currentAnswer as string[] || [])[index] || ''}
+                  placeholder="Type matching answer"
                 />
               </div>
             ))}
@@ -147,12 +166,13 @@ const LessonContent = ({ content, questions = [], isQuiz = false }: LessonConten
 
       case 'codeCorrection':
         return (
-          <div key={question.id} className="mb-6">
-            <Label>{question.question}</Label>
+          <div key={question.id} className="mb-6 space-y-2">
+            <Label className="text-lg font-medium">{question.question}</Label>
             <Input
-              className="mt-2 font-mono"
+              className="font-mono max-w-md"
               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              value={answers.find(a => a.questionId === question.id)?.answer as string || ''}
+              value={currentAnswer as string || ''}
+              placeholder="Type corrected code here"
             />
           </div>
         );
@@ -168,10 +188,15 @@ const LessonContent = ({ content, questions = [], isQuiz = false }: LessonConten
         className="prose prose-slate dark:prose-invert max-w-none"
         dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
       />
-      {isQuiz && questions.length > 0 && (
-        <div className="mt-8 space-y-6">
+      {isQuiz && questions && questions.length > 0 && (
+        <div className="mt-8 space-y-6 p-6 border rounded-lg bg-card">
+          <h2 className="text-2xl font-bold mb-6">Quiz Questions</h2>
           {questions.map(renderQuestion)}
-          <Button onClick={checkAnswers} className="mt-4">
+          <Button 
+            onClick={checkAnswers} 
+            className="mt-6"
+            size="lg"
+          >
             Submit Answers
           </Button>
         </div>
