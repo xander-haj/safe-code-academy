@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface LessonContentProps {
   content: string;
+}
+
+declare global {
+  interface Window {
+    handleQuizAnswer: (index: number, answer: string, correct: string) => void;
+    checkAnswer: (index: number) => void;
+  }
 }
 
 const LessonContent = ({ content }: LessonContentProps) => {
@@ -51,51 +58,92 @@ const LessonContent = ({ content }: LessonContentProps) => {
         case "fill-blank":
           interactiveElement = `
             <div class="my-4">
-              <input type="text" class="border p-2 rounded" 
+              <label class="block mb-2">Fill in the blank:</label>
+              <input type="text" class="border p-2 rounded w-full" 
                      onchange="window.handleQuizAnswer(${index}, this.value, '${answer.correct}')" />
-              <button onclick="window.checkAnswer(${index})" class="ml-2 px-4 py-2 bg-blue-500 text-white rounded">
-                Check
+              <button onclick="window.checkAnswer(${index})" class="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+                Check Answer
               </button>
             </div>
           `;
           break;
         case "multiple-choice":
-        case "true-false":
-          const options = answer.type === "multiple-choice" 
-            ? ["<ol>", "<li>", "<ul>", "<list>"]
-            : ["True", "False"];
+          const options = answer.correct.split('|');
+          const correctIndex = options.findIndex(opt => opt.startsWith('*'));
+          const cleanOptions = options.map(opt => opt.replace('*', ''));
+          
           interactiveElement = `
             <div class="my-4">
-              ${options.map((opt, i) => `
-                <label class="block mb-2">
-                  <input type="radio" name="q${index}" value="${i}"
-                         onchange="window.handleQuizAnswer(${index}, '${i}', '${answer.correct}')" />
-                  ${opt}
+              <fieldset>
+                <legend class="mb-2">Choose the correct answer:</legend>
+                ${cleanOptions.map((opt, i) => `
+                  <label class="flex items-center space-x-2 mb-2">
+                    <input type="radio" name="q${index}" value="${i}"
+                           onchange="window.handleQuizAnswer(${index}, '${i}', '${correctIndex}')" />
+                    <span>${opt}</span>
+                  </label>
+                `).join("")}
+              </fieldset>
+              <button onclick="window.checkAnswer(${index})" class="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+                Check Answer
+              </button>
+            </div>
+          `;
+          break;
+        case "true-false":
+          interactiveElement = `
+            <div class="my-4">
+              <fieldset>
+                <legend class="mb-2">True or False:</legend>
+                <label class="flex items-center space-x-2 mb-2">
+                  <input type="radio" name="q${index}" value="true"
+                         onchange="window.handleQuizAnswer(${index}, 'true', '${answer.correct}')" />
+                  <span>True</span>
                 </label>
-              `).join("")}
+                <label class="flex items-center space-x-2 mb-2">
+                  <input type="radio" name="q${index}" value="false"
+                         onchange="window.handleQuizAnswer(${index}, 'false', '${answer.correct}')" />
+                  <span>False</span>
+                </label>
+              </fieldset>
+              <button onclick="window.checkAnswer(${index})" class="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+                Check Answer
+              </button>
             </div>
           `;
           break;
         case "matching":
+          const pairs = answer.correct.split(',');
           interactiveElement = `
             <div class="my-4">
-              ${answer.correct.split(',').map((pair, i) => {
-                const [question, answer] = pair.split('-');
-                return `
-                  <label class="block mb-2">
-                    ${question} <input type="text" onchange="window.handleQuizAnswer(${index}, this.value, '${answer}')" />
-                  </label>
-                `;
-              }).join("")}
+              <div class="grid gap-4">
+                ${pairs.map((pair, i) => {
+                  const [question, answer] = pair.split('-');
+                  return `
+                    <div class="flex items-center gap-4">
+                      <span class="min-w-[100px]">${question}</span>
+                      <input type="text" class="border p-2 rounded flex-1" 
+                             placeholder="Enter matching answer"
+                             onchange="window.handleQuizAnswer(${index}_${i}, this.value, '${answer}')" />
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+              <button onclick="window.checkAnswer(${index})" class="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+                Check Answers
+              </button>
             </div>
           `;
           break;
         case "code":
           interactiveElement = `
             <div class="my-4">
-              <textarea class="border p-2 rounded" onchange="window.handleQuizAnswer(${index}, this.value, '${answer.correct}')"></textarea>
-              <button onclick="window.checkAnswer(${index})" class="ml-2 px-4 py-2 bg-blue-500 text-white rounded">
-                Check
+              <label class="block mb-2">Write your code:</label>
+              <textarea class="border p-2 rounded w-full min-h-[100px] font-mono"
+                        onchange="window.handleQuizAnswer(${index}, this.value, '${answer.correct}')"
+                        placeholder="Write your code here..."></textarea>
+              <button onclick="window.checkAnswer(${index})" class="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+                Check Code
               </button>
             </div>
           `;
@@ -127,8 +175,8 @@ const LessonContent = ({ content }: LessonContentProps) => {
   }, []);
 
   const sanitizedContent = DOMPurify.sanitize(marked(processQuizContent(content)), {
-    ADD_TAGS: ["input", "button", "label"],
-    ADD_ATTR: ["type", "onchange", "onclick", "name", "value", "class"],
+    ADD_TAGS: ["input", "button", "label", "fieldset", "legend", "textarea"],
+    ADD_ATTR: ["type", "onchange", "onclick", "name", "value", "class", "placeholder"],
   });
 
   return (
